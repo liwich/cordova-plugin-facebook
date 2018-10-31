@@ -8,13 +8,13 @@
 - (void) pluginInitialize
 {
     id FacebookAppId = [self.commandDelegate.settings objectForKey:[@"FacebookAppID" lowercaseString]];
-    
+
     if (FacebookAppId != nil) {
         self.fbAppId = (NSString*) FacebookAppId;
     }
-    
+
     NSNotificationCenter* defaultCenter = [NSNotificationCenter defaultCenter];
-    
+
     [defaultCenter addObserver:self selector:@selector(onAppDidBecomeActive:) name:UIApplicationDidBecomeActiveNotification object:nil];
     [defaultCenter addObserver:self selector:@selector(onAppDidFinishLaunching:) name:UIApplicationDidFinishLaunchingNotification object:nil];
     [defaultCenter addObserver:self selector:@selector(onHandleOpenURL:) name:CDVPluginHandleOpenURLNotification object:nil];
@@ -28,11 +28,11 @@
 + (NSDictionary*) arrayAsDictionary:(NSArray*) array
 {
     const NSString* VALUE = @"value";
-    
+
     if(array == nil || [array count] == 0) {
         return nil;
     }
-    
+
     NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithCapacity: [array count]];
 
     NSDictionary* anObject;
@@ -42,7 +42,7 @@
         if(anObject != nil) {
             NSString *key = [anObject objectForKey: @"key"];
             NSString *type = [anObject objectForKey: @"type"];
-            
+
             if([type isEqualToString:@"double"]) {
                 double d = [(NSNumber*)[anObject objectForKey:VALUE] doubleValue];
                 if(d == d) {
@@ -62,14 +62,14 @@
             }
         }
     }
-    
+
     return dict;
 }
 
 - (void) event: (CDVInvokedUrlCommand*) command
 {
     NSArray* args = command.arguments;
-    
+
     CDVPluginResult* pluginResult = nil;
     NSString* errorMessage = nil;
     NSString* eventName = nil;
@@ -77,28 +77,28 @@
     double valueAsDouble;
     NSArray* properties = nil;
     NSDictionary* propertyDict = nil;
-    
+
     if ([args count] > 0) {
         eventName = [args objectAtIndex: 0];
     }
-    
+
     if (eventName == nil) {
         errorMessage = @"Must have an event name";
     } else {
-        
+
         if([args count] > 1) {
             valueToSum = [args objectAtIndex: 1];
             if(valueToSum != nil) {
                 valueAsDouble = [valueToSum doubleValue];
             }
         }
-        
+
         if([args count] > 2) {
             properties = [args objectAtIndex: 2];
         }
-        
+
         propertyDict = [CDVFacebook arrayAsDictionary:properties];
-        
+
         if(propertyDict != nil && valueToSum != nil) {
             [FBSDKAppEvents logEvent: eventName valueToSum: valueAsDouble parameters: propertyDict];
         } else if(propertyDict != nil) {
@@ -108,28 +108,28 @@
         } else {
             [FBSDKAppEvents logEvent: eventName];
         }
-        
+
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     }
-    
+
     if(errorMessage != nil && pluginResult == nil) {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:errorMessage];
     }
-    
+
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
 - (void) purchase: (CDVInvokedUrlCommand*) command
 {
     NSArray* args = command.arguments;
-    
+
     CDVPluginResult* pluginResult = nil;
     NSString* errorMessage = nil;
-    
+
     NSString* currency = nil;
     NSString* amount = nil;
     double amountAsDouble;
-    
+
     NSArray* properties = nil;
     NSDictionary* propertyDict = nil;
 
@@ -140,15 +140,15 @@
         if(amount != nil) {
             amountAsDouble = [amount doubleValue];
         }
-        
+
         currency = [args objectAtIndex: 1];
-        
+
         if([args count] > 2) {
             properties = [args objectAtIndex: 2];
         }
-        
+
         propertyDict = [CDVFacebook arrayAsDictionary:properties];
-        
+
         if(propertyDict != nil && currency != nil && amount != nil) {
             [FBSDKAppEvents logPurchase: amountAsDouble currency: currency parameters: propertyDict];
         } else if(propertyDict == nil && currency != nil && amount != nil) {
@@ -156,16 +156,16 @@
         } else {
             errorMessage = @"Could not parse currency or amount!";
         }
-        
+
         if(errorMessage == nil) {
             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
         }
     }
-    
+
     if(errorMessage != nil && pluginResult == nil) {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:errorMessage];
     }
-    
+
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
@@ -176,7 +176,7 @@
     NSMutableDictionary* cdvResult = [NSMutableDictionary dictionaryWithCapacity:10];
     NSNumber *yes = [NSNumber numberWithBool: YES];
     NSNumber *no = [NSNumber numberWithBool: NO];
-    
+
     if([args count] > 0) {
         permissions = [args objectAtIndex: 0];
     }
@@ -221,6 +221,8 @@
 }
 
 - (void) logout: (CDVInvokedUrlCommand*) command {
+    [FBSDKAccessToken setCurrentAccessToken:nil];
+    [FBSDKProfile setCurrentProfile:nil];
     [self.fbLogin logOut];
 
     [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
@@ -287,7 +289,7 @@
         NSURL* url = [userInfo objectForKey: UIApplicationLaunchOptionsURLKey];
         NSString* fromApp = [userInfo objectForKey: UIApplicationLaunchOptionsSourceApplicationKey];
         id annotation = [userInfo objectForKey: UIApplicationLaunchOptionsAnnotationKey];
-        
+
         [self setFacebookApplication:self.app
                              withURL:url
                    sourceApplication:fromApp
